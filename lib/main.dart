@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kosfinder/config/supabase_config.dart';
 import 'package:kosfinder/providers/kos_provider.dart';
 import 'package:kosfinder/screens/kos_list_screen.dart';
 import 'package:provider/provider.dart';
@@ -7,18 +9,25 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    debugPrint('Peringatan: Gagal memuat file .env: $e');
+  }
 
-  if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey, // ignore: deprecated_member_use
-    );
-  } else {
-    debugPrint(
-      'Peringatan: Konfigurasi Supabase (SUPABASE_URL / SUPABASE_ANON_KEY) tidak ditemukan via environment.',
-    );
+  try {
+    if (SupabaseConfig.url.isNotEmpty && SupabaseConfig.anonKey.isNotEmpty) {
+      await Supabase.initialize(
+        url: SupabaseConfig.url,
+        anonKey: SupabaseConfig.anonKey, // ignore: deprecated_member_use
+      );
+    } else {
+      debugPrint(
+        'Peringatan: Konfigurasi Supabase (url / anonKey) tidak ditemukan.',
+      );
+    }
+  } catch (e) {
+    debugPrint('Gagal menginisialisasi Supabase: $e');
   }
 
   runApp(const MyApp());
@@ -35,6 +44,7 @@ class MyApp extends StatelessWidget {
       create: (_) => KosProvider(),
       child: MaterialApp(
         title: 'KosFinder',
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
