@@ -8,7 +8,22 @@ class KosRepository {
   KosRepository({SupabaseClient? client}) : _customClient = client;
 
   /// Mengambil instance [SupabaseClient] yang tersedia.
-  SupabaseClient get client => _customClient ?? Supabase.instance.client;
+  ///
+  /// Mengembalikan [_customClient] jika disuplai saat inisialisasi, atau
+  /// [Supabase.instance.client] dari instance global yang telah diinisialisasi.
+  /// Melempar [Exception] dengan pesan jelas jika Supabase belum diinisialisasi.
+  SupabaseClient get client {
+    if (_customClient != null) {
+      return _customClient;
+    }
+    try {
+      return Supabase.instance.client;
+    } catch (_) {
+      throw Exception(
+        'Layanan Supabase belum diinisialisasi. Pastikan koneksi dan inisialisasi aplikasi telah selesai.',
+      );
+    }
+  }
 
   /// Mengambil seluruh daftar kos dari tabel `public.kos` di Supabase.
   ///

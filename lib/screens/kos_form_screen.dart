@@ -36,6 +36,11 @@ class _KosFormScreenState extends State<KosFormScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<KosProvider>().clearError();
+      }
+    });
     _namaController = TextEditingController(text: widget.kos?.nama ?? '');
     _alamatController =
         TextEditingController(text: widget.kos?.alamatArea ?? '');
@@ -154,7 +159,7 @@ class _KosFormScreenState extends State<KosFormScreen> {
     final kosProvider = context.watch<KosProvider>();
     final isSaving = kosProvider.isCreating;
 
-    final errorMessage = _localErrorMessage ?? kosProvider.errorMessage;
+    final errorMessage = _localErrorMessage;
 
     return Scaffold(
       appBar: AppBar(

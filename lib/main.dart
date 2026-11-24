@@ -4,6 +4,7 @@ import 'package:kosfinder/config/supabase_config.dart';
 import 'package:kosfinder/providers/auth_provider.dart';
 import 'package:kosfinder/providers/kos_provider.dart';
 import 'package:kosfinder/repositories/auth_repository.dart';
+import 'package:kosfinder/repositories/kos_repository.dart';
 import 'package:kosfinder/screens/kos_list_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,12 +18,14 @@ Future<void> main() async {
     debugPrint('Peringatan: Gagal memuat file .env: $e');
   }
 
+  SupabaseClient? supabaseClient;
   try {
     if (SupabaseConfig.url.isNotEmpty && SupabaseConfig.anonKey.isNotEmpty) {
-      await Supabase.initialize(
+      final supabase = await Supabase.initialize(
         url: SupabaseConfig.url,
         anonKey: SupabaseConfig.anonKey, // ignore: deprecated_member_use
       );
+      supabaseClient = supabase.client;
     } else {
       debugPrint(
         'Peringatan: Konfigurasi Supabase (url / anonKey) tidak ditemukan.',
@@ -32,21 +35,41 @@ Future<void> main() async {
     debugPrint('Gagal menginisialisasi Supabase: $e');
   }
 
-  runApp(const MyApp());
+  runApp(MyApp(supabaseClient: supabaseClient));
 }
 
 class MyApp extends StatelessWidget {
   final Widget? home;
+  final SupabaseClient? supabaseClient;
+  final KosRepository? kosRepository;
+  final AuthRepository? authRepository;
 
-  const MyApp({super.key, this.home});
+  const MyApp({
+    super.key,
+    this.home,
+    this.supabaseClient,
+    this.kosRepository,
+    this.authRepository,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveKosRepo = kosRepository ??
+        (supabaseClient != null
+            ? KosRepository(client: supabaseClient)
+            : KosRepository());
+    final effectiveAuthRepo = authRepository ??
+        (supabaseClient != null
+            ? AuthRepository(authClient: supabaseClient!.auth)
+            : _AppAuthRepository());
+
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => KosProvider()),
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(repository: _AppAuthRepository()),
+          create: (_) => KosProvider(repository: effectiveKosRepo),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(repository: effectiveAuthRepo),
         ),
       ],
       child: MaterialApp(

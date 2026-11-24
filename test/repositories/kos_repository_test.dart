@@ -50,9 +50,20 @@ void main() {
       );
     });
 
-    test('Memastikan instansiasi KosRepository tanpa Supabase terinisialisasi melempar AssertionError saat client diakses', () {
+    test('Memastikan instansiasi KosRepository tanpa Supabase terinisialisasi melempar Exception saat client diakses', () {
       final repository = KosRepository();
-      expect(() => repository.client, throwsA(isA<AssertionError>()));
+      expect(
+        () => repository.client,
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains(
+              'Layanan Supabase belum diinisialisasi. Pastikan koneksi dan inisialisasi aplikasi telah selesai.',
+            ),
+          ),
+        ),
+      );
     });
   });
 }

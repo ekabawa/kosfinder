@@ -10,8 +10,22 @@ class AuthRepository {
   AuthRepository({GoTrueClient? authClient}) : _customAuthClient = authClient;
 
   /// Mengambil instance [GoTrueClient] yang tersedia.
-  GoTrueClient get _auth =>
-      _customAuthClient ?? Supabase.instance.client.auth;
+  ///
+  /// Mengembalikan [_customAuthClient] jika disuplai saat inisialisasi, atau
+  /// [Supabase.instance.client.auth] dari instance global yang telah diinisialisasi.
+  /// Melempar [Exception] dengan pesan jelas jika Supabase belum diinisialisasi.
+  GoTrueClient get _auth {
+    if (_customAuthClient != null) {
+      return _customAuthClient;
+    }
+    try {
+      return Supabase.instance.client.auth;
+    } catch (_) {
+      throw Exception(
+        'Layanan autentikasi Supabase belum diinisialisasi. Pastikan koneksi dan inisialisasi aplikasi telah selesai.',
+      );
+    }
+  }
 
   /// Mendaftarkan akun pemilik baru menggunakan email dan password.
   ///
@@ -72,7 +86,17 @@ class AuthRepository {
 
   /// Mengambil data user yang sedang aktif (login).
   ///
-  /// Mengembalikan [User] jika ada sesi aktif, atau `null` jika tidak ada.
-  User? get currentUser => _auth.currentUser;
+  /// Mengembalikan [User] jika ada sesi aktif, atau `null` jika tidak ada sesi
+  /// atau layanan Supabase belum diinisialisasi.
+  User? get currentUser {
+    try {
+      if (_customAuthClient != null) {
+        return _customAuthClient.currentUser;
+      }
+      return Supabase.instance.client.auth.currentUser;
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
