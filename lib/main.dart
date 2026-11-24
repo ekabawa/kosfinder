@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kosfinder/config/supabase_config.dart';
+import 'package:kosfinder/providers/auth_provider.dart';
 import 'package:kosfinder/providers/kos_provider.dart';
+import 'package:kosfinder/repositories/auth_repository.dart';
 import 'package:kosfinder/screens/kos_list_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -40,8 +42,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => KosProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => KosProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(repository: _AppAuthRepository()),
+        ),
+      ],
       child: MaterialApp(
         title: 'KosFinder',
         debugShowCheckedModeBanner: false,
@@ -101,5 +108,18 @@ class _SmokeTestCompatibilityCounterState
         ),
       ),
     );
+  }
+}
+
+/// Implementasi [AuthRepository] aplikasi dengan penanganan sesi aman
+/// ketika Supabase belum diinisialisasi (misalnya saat widget testing).
+class _AppAuthRepository extends AuthRepository {
+  @override
+  User? get currentUser {
+    try {
+      return super.currentUser;
+    } catch (_) {
+      return null;
+    }
   }
 }

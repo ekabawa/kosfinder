@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kosfinder/models/kos.dart';
+import 'package:kosfinder/providers/auth_provider.dart';
 import 'package:kosfinder/providers/kos_provider.dart';
 import 'package:kosfinder/screens/about_screen.dart';
+import 'package:kosfinder/screens/auth_screen.dart';
 import 'package:kosfinder/screens/kos_detail_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -50,6 +52,8 @@ class _KosListScreenState extends State<KosListScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
+          // Tombol Akun / Login Pemilik Kos
+          const _AuthActionButton(),
           IconButton(
             icon: const Icon(Icons.info_outline),
             tooltip: 'Tentang Aplikasi',
@@ -479,5 +483,48 @@ class _KosCard extends StatelessWidget {
       }
     }
     return buffer.toString().split('').reversed.join('');
+  }
+}
+
+class _AuthActionButton extends StatelessWidget {
+  const _AuthActionButton();
+
+  @override
+  Widget build(BuildContext context) {
+    AuthProvider? authProvider;
+    try {
+      authProvider = Provider.of<AuthProvider>(context);
+    } on Object catch (_) {
+      authProvider = null;
+    }
+
+    final isAuthenticated = authProvider?.isAuthenticated ?? false;
+
+    return IconButton(
+      key: const Key('auth_button'),
+      icon: Icon(
+        isAuthenticated ? Icons.person : Icons.person_outline,
+      ),
+      tooltip: isAuthenticated ? 'Akun Pemilik' : 'Login Pemilik Kos',
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) {
+              if (authProvider != null) {
+                return ChangeNotifierProvider<AuthProvider>.value(
+                  value: authProvider,
+                  child: const AuthScreen(),
+                );
+              }
+              return ChangeNotifierProvider<AuthProvider>(
+                create: (_) => AuthProvider(),
+                child: const AuthScreen(),
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 }
