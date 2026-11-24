@@ -5,6 +5,7 @@ import 'package:kosfinder/providers/kos_provider.dart';
 import 'package:kosfinder/screens/about_screen.dart';
 import 'package:kosfinder/screens/auth_screen.dart';
 import 'package:kosfinder/screens/kos_detail_screen.dart';
+import 'package:kosfinder/screens/my_kos_screen.dart';
 import 'package:provider/provider.dart';
 
 /// Layar utama publik untuk menampilkan daftar tempat kos di sekitar kampus,
@@ -505,25 +506,54 @@ class _AuthActionButton extends StatelessWidget {
       icon: Icon(
         isAuthenticated ? Icons.person : Icons.person_outline,
       ),
-      tooltip: isAuthenticated ? 'Akun Pemilik' : 'Login Pemilik Kos',
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) {
-              if (authProvider != null) {
-                return ChangeNotifierProvider<AuthProvider>.value(
-                  value: authProvider,
+      tooltip: isAuthenticated ? 'Kelola Kos Saya' : 'Login Pemilik Kos',
+      onPressed: () async {
+        if (isAuthenticated) {
+          // Jika sudah login, langsung buka MyKosScreen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const MyKosScreen(),
+            ),
+          );
+        } else {
+          // Jika belum login, buka AuthScreen
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) {
+                if (authProvider != null) {
+                  return ChangeNotifierProvider<AuthProvider>.value(
+                    value: authProvider,
+                    child: const AuthScreen(),
+                  );
+                }
+                return ChangeNotifierProvider<AuthProvider>(
+                  create: (_) => AuthProvider(),
                   child: const AuthScreen(),
                 );
-              }
-              return ChangeNotifierProvider<AuthProvider>(
-                create: (_) => AuthProvider(),
-                child: const AuthScreen(),
+              },
+            ),
+          );
+
+          // Setelah kembali dari AuthScreen, jika login berhasil arahkan ke MyKosScreen
+          if (context.mounted) {
+            AuthProvider? updatedAuth;
+            try {
+              updatedAuth = Provider.of<AuthProvider>(context, listen: false);
+            } on Object catch (_) {
+              updatedAuth = null;
+            }
+            if (updatedAuth?.isAuthenticated ?? false) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MyKosScreen(),
+                ),
               );
-            },
-          ),
-        );
+            }
+          }
+        }
       },
     );
   }
