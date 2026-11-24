@@ -387,11 +387,16 @@ void main() {
         await tester.pageBack();
         await tester.pumpAndSettle();
 
-        // Tekan tombol Hapus -> menampilkan SnackBar informasi T14
+        // Tekan tombol Hapus -> memunculkan dialog konfirmasi hapus
         await tester.tap(find.byKey(const Key('delete_kos_button')));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        expect(find.textContaining('T14'), findsOneWidget);
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('delete_confirmation_dialog')), findsOneWidget);
+        expect(find.text('Konfirmasi Hapus'), findsOneWidget);
+
+        // Tekan tombol Batal -> memastikan dialog tertutup
+        await tester.tap(find.byKey(const Key('cancel_delete_button')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('delete_confirmation_dialog')), findsNothing);
       },
     );
 

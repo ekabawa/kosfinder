@@ -11,6 +11,7 @@ class KosProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isCreating = false;
   bool _isUpdating = false;
+  bool _isDeleting = false;
   String? _errorMessage;
 
   String _searchQuery = '';
@@ -55,6 +56,9 @@ class KosProvider extends ChangeNotifier {
 
   /// Status apakah proses pembaruan data kos sedang berlangsung.
   bool get isUpdating => _isUpdating;
+
+  /// Status apakah proses penghapusan data kos sedang berlangsung.
+  bool get isDeleting => _isDeleting;
 
   /// Pesan galat jika terjadi kegagalan pemuatan data.
   String? get errorMessage => _errorMessage;
@@ -205,6 +209,41 @@ class KosProvider extends ChangeNotifier {
       return null;
     } finally {
       _isUpdating = false;
+      notifyListeners();
+    }
+  }
+
+  /// Menghapus data kos melalui [KosRepository].
+  ///
+  /// Mengembalikan `true` jika penghapusan berhasil, atau `false` jika terjadi kegagalan.
+  /// Menghapus item kos dari daftar lokal [_kosList] agar data langsung hilang dari tampilan.
+  Future<bool> deleteKos({
+    required String id,
+    required String ownerId,
+  }) async {
+    _isDeleting = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    // Validasi kepemilikan di level provider sebelum memanggil repository
+    final targetKos = _kosList.where((k) => k.id == id).firstOrNull;
+    if (targetKos != null && targetKos.ownerId != ownerId) {
+      _isDeleting = false;
+      _errorMessage = 'Anda tidak memiliki izin untuk menghapus kos ini.';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      await _repository.deleteKos(id: id, ownerId: ownerId);
+      _kosList.removeWhere((k) => k.id == id && k.ownerId == ownerId);
+      _errorMessage = null;
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      return false;
+    } finally {
+      _isDeleting = false;
       notifyListeners();
     }
   }

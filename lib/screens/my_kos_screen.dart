@@ -263,6 +263,85 @@ class _MyKosCard extends StatelessWidget {
     return buffer.toString().split('').reversed.join('');
   }
 
+  Future<void> _handleDeleteKos(BuildContext context, Kos kos) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          key: const Key('delete_confirmation_dialog'),
+          title: const Text('Konfirmasi Hapus'),
+          content: Text(
+            'Apakah Anda yakin ingin menghapus "${kos.nama}"? Data yang dihapus tidak dapat dipulihkan.',
+          ),
+          actions: [
+            TextButton(
+              key: const Key('cancel_delete_button'),
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              key: const Key('confirm_delete_button'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Ya, Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && context.mounted) {
+      final authProvider = context.read<AuthProvider>();
+      final ownerId = authProvider.currentUser?.id;
+
+      if (ownerId == null || ownerId.isEmpty || ownerId != kos.ownerId) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Anda tidak memiliki izin untuk menghapus kos ini.',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        return;
+      }
+
+      final kosProvider = context.read<KosProvider>();
+      final success = await kosProvider.deleteKos(
+        id: kos.id,
+        ownerId: ownerId,
+      );
+
+      if (context.mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text('Data kos "${kos.nama}" berhasil dihapus!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+        } else {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(
+                  kosProvider.errorMessage ?? 'Gagal menghapus data kos.',
+                ),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -400,17 +479,7 @@ class _MyKosCard extends StatelessWidget {
                   key: isFirst
                       ? const Key('delete_kos_button')
                       : Key('delete_kos_button_${kos.id}'),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar()
-                      ..showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Fitur hapus kos akan tersedia pada pembaruan berikutnya (T14).',
-                          ),
-                        ),
-                      );
-                  },
+                  onPressed: () => _handleDeleteKos(context, kos),
                   icon: const Icon(Icons.delete_outline, size: 18),
                   label: const Text('Hapus'),
                   style: TextButton.styleFrom(

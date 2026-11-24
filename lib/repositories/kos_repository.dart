@@ -127,5 +127,26 @@ class KosRepository {
       throw Exception('Terjadi kesalahan jaringan atau server: $e');
     }
   }
+
+  /// Menghapus data kos dari tabel `public.kos` di database Supabase.
+  ///
+  /// Hanya dapat menghapus unit kos dengan [id] dan [ownerId] yang sesuai (RLS).
+  /// Melempar [Exception] jika terjadi kegagalan jaringan atau penolakan RLS.
+  Future<void> deleteKos({
+    required String id,
+    required String ownerId,
+  }) async {
+    try {
+      await client
+          .from('kos')
+          .delete()
+          .eq('id', id)
+          .eq('owner_id', ownerId);
+    } on PostgrestException catch (e) {
+      throw Exception('Gagal menghapus kos: ${e.message}');
+    } catch (e) {
+      throw Exception('Terjadi kesalahan jaringan atau server: $e');
+    }
+  }
 }
 
