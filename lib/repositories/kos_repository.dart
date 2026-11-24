@@ -30,5 +30,42 @@ class KosRepository {
       throw Exception('Terjadi kesalahan jaringan atau server: $e');
     }
   }
+
+  /// Menambahkan data kos baru ke tabel `public.kos` di database Supabase.
+  ///
+  /// Mengembalikan objek [Kos] yang berhasil dibuat dari respon database.
+  /// Melempar [Exception] jika terjadi kegagalan jaringan atau penolakan RLS.
+  Future<Kos> createKos({
+    required String ownerId,
+    required String nama,
+    required String alamatArea,
+    required int hargaPerBulan,
+    required String deskripsi,
+    required String fasilitas,
+    required String tipeKos,
+    required String nomorKontak,
+  }) async {
+    try {
+      final payload = {
+        'owner_id': ownerId,
+        'nama': nama,
+        'alamat_area': alamatArea,
+        'harga_per_bulan': hargaPerBulan,
+        'deskripsi': deskripsi,
+        'fasilitas': fasilitas,
+        'tipe_kos': tipeKos,
+        'nomor_kontak': nomorKontak,
+      };
+
+      final response =
+          await client.from('kos').insert(payload).select().single();
+
+      return Kos.fromJson(response);
+    } on PostgrestException catch (e) {
+      throw Exception('Gagal menambahkan kos: ${e.message}');
+    } catch (e) {
+      throw Exception('Terjadi kesalahan jaringan atau server: $e');
+    }
+  }
 }
 
