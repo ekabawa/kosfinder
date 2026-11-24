@@ -82,5 +82,50 @@ class KosRepository {
       throw Exception('Terjadi kesalahan jaringan atau server: $e');
     }
   }
+
+  /// Memperbarui data kos yang ada pada tabel `public.kos` di database Supabase.
+  ///
+  /// Hanya dapat memperbarui unit kos dengan [id] dan [ownerId] yang sesuai (RLS).
+  /// Kolom `owner_id` tidak dapat diubah melalui metode ini untuk menjaga integritas data.
+  /// Mengembalikan objek [Kos] yang telah diperbarui dari database.
+  /// Melempar [Exception] jika terjadi kegagalan jaringan atau penolakan RLS.
+  Future<Kos> updateKos({
+    required String id,
+    required String ownerId,
+    required String nama,
+    required String alamatArea,
+    required int hargaPerBulan,
+    required String deskripsi,
+    required String fasilitas,
+    required String tipeKos,
+    required String nomorKontak,
+  }) async {
+    try {
+      final payload = {
+        'nama': nama,
+        'alamat_area': alamatArea,
+        'harga_per_bulan': hargaPerBulan,
+        'deskripsi': deskripsi,
+        'fasilitas': fasilitas,
+        'tipe_kos': tipeKos,
+        'nomor_kontak': nomorKontak,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      final response = await client
+          .from('kos')
+          .update(payload)
+          .eq('id', id)
+          .eq('owner_id', ownerId)
+          .select()
+          .single();
+
+      return Kos.fromJson(response);
+    } on PostgrestException catch (e) {
+      throw Exception('Gagal memperbarui kos: ${e.message}');
+    } catch (e) {
+      throw Exception('Terjadi kesalahan jaringan atau server: $e');
+    }
+  }
 }
 

@@ -379,16 +379,16 @@ class _MyKosCard extends StatelessWidget {
                   key: isFirst
                       ? const Key('edit_kos_button')
                       : Key('edit_kos_button_${kos.id}'),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar()
-                      ..showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Fitur ubah kos akan tersedia pada pembaruan berikutnya (T13).',
-                          ),
-                        ),
-                      );
+                  onPressed: () async {
+                    final result = await Navigator.push<Kos?>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => KosFormScreen(kos: kos),
+                      ),
+                    );
+                    if (result != null && context.mounted) {
+                      context.read<KosProvider>().loadKos();
+                    }
                   },
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   label: const Text('Ubah'),

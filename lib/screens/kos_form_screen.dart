@@ -21,6 +21,8 @@ class KosFormScreen extends StatefulWidget {
 class _KosFormScreenState extends State<KosFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  bool get isEditMode => widget.kos != null;
+
   late final TextEditingController _namaController;
   late final TextEditingController _alamatController;
   late final TextEditingController _hargaController;
@@ -113,26 +115,56 @@ class _KosFormScreenState extends State<KosFormScreen> {
         _hargaController.text.replaceAll('.', '').trim();
     final hargaPerBulan = int.parse(cleanHarga);
 
-    final result = await kosProvider.createKos(
-      ownerId: ownerId,
-      nama: _namaController.text.trim(),
-      alamatArea: _alamatController.text.trim(),
-      hargaPerBulan: hargaPerBulan,
-      deskripsi: _deskripsiController.text.trim(),
-      fasilitas: _fasilitasController.text.trim(),
-      tipeKos: _selectedTipeKos!,
-      nomorKontak: _kontakController.text.trim(),
-    );
+    Kos? result;
+    if (isEditMode) {
+      // Validasi hak kepemilikan kos sebelum mengirimkan request
+      if (widget.kos!.ownerId != ownerId) {
+        setState(() {
+          _localErrorMessage =
+              'Anda tidak memiliki izin untuk mengubah data kos ini.';
+        });
+        return;
+      }
+
+      result = await kosProvider.updateKos(
+        id: widget.kos!.id,
+        ownerId: ownerId,
+        nama: _namaController.text.trim(),
+        alamatArea: _alamatController.text.trim(),
+        hargaPerBulan: hargaPerBulan,
+        deskripsi: _deskripsiController.text.trim(),
+        fasilitas: _fasilitasController.text.trim(),
+        tipeKos: _selectedTipeKos!,
+        nomorKontak: _kontakController.text.trim(),
+      );
+    } else {
+      result = await kosProvider.createKos(
+        ownerId: ownerId,
+        nama: _namaController.text.trim(),
+        alamatArea: _alamatController.text.trim(),
+        hargaPerBulan: hargaPerBulan,
+        deskripsi: _deskripsiController.text.trim(),
+        fasilitas: _fasilitasController.text.trim(),
+        tipeKos: _selectedTipeKos!,
+        nomorKontak: _kontakController.text.trim(),
+      );
+    }
 
     if (result != null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Data kos berhasil ditambahkan!'),
+          SnackBar(
+            content: Text(
+              isEditMode
+                  ? 'Data kos berhasil diperbarui!'
+                  : 'Data kos berhasil ditambahkan!',
+            ),
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context, result);
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context, result);
+        }
       }
     } else {
       // Terjadi kesalahan jaringan / database: input tetap dipertahankan
@@ -141,14 +173,6 @@ class _KosFormScreenState extends State<KosFormScreen> {
           _localErrorMessage =
               kosProvider.errorMessage ?? 'Gagal menyimpan data kos.';
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _localErrorMessage ?? 'Terjadi kesalahan saat menyimpan.',
-            ),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
       }
     }
   }
@@ -157,15 +181,15 @@ class _KosFormScreenState extends State<KosFormScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final kosProvider = context.watch<KosProvider>();
-    final isSaving = kosProvider.isCreating;
+    final isSaving = kosProvider.isCreating || kosProvider.isUpdating;
 
     final errorMessage = _localErrorMessage;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Tambah Kos Baru',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          isEditMode ? 'Ubah Informasi Kos' : 'Tambah Kos Baru',
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -365,7 +389,9 @@ class _KosFormScreenState extends State<KosFormScreen> {
                         )
                       : const Icon(Icons.save),
                   label: Text(
-                    isSaving ? 'Menyimpan...' : 'Simpan Kos',
+                    isSaving
+                        ? (isEditMode ? 'Menyimpan Perubahan...' : 'Menyimpan...')
+                        : (isEditMode ? 'Simpan Perubahan' : 'Simpan Kos'),
                     style: const TextStyle(fontSize: 16),
                   ),
                 ),

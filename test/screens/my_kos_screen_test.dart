@@ -376,14 +376,15 @@ void main() {
         expect(find.byKey(const Key('edit_kos_button')), findsOneWidget);
         expect(find.byKey(const Key('delete_kos_button')), findsOneWidget);
 
-        // Tekan tombol Ubah -> menampilkan SnackBar informasi T13
+        // Tekan tombol Ubah -> membuka KosFormScreen dalam mode edit
         await tester.tap(find.byKey(const Key('edit_kos_button')));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        expect(find.textContaining('T13'), findsOneWidget);
+        await tester.pumpAndSettle();
+        expect(find.byType(KosFormScreen), findsOneWidget);
+        expect(find.text('Ubah Informasi Kos'), findsOneWidget);
+        expect(find.text('Kos Flamboyan'), findsOneWidget);
 
-        // Tunggu SnackBar selesai agar tidak mengantre di ScaffoldMessenger
-        await tester.pump(const Duration(seconds: 4));
+        // Kembali ke MyKosScreen
+        await tester.pageBack();
         await tester.pumpAndSettle();
 
         // Tekan tombol Hapus -> menampilkan SnackBar informasi T14

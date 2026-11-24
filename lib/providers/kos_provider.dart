@@ -10,6 +10,7 @@ class KosProvider extends ChangeNotifier {
   List<Kos> _kosList = [];
   bool _isLoading = false;
   bool _isCreating = false;
+  bool _isUpdating = false;
   String? _errorMessage;
 
   String _searchQuery = '';
@@ -51,6 +52,9 @@ class KosProvider extends ChangeNotifier {
 
   /// Status apakah proses penyimpanan kos baru sedang berlangsung.
   bool get isCreating => _isCreating;
+
+  /// Status apakah proses pembaruan data kos sedang berlangsung.
+  bool get isUpdating => _isUpdating;
 
   /// Pesan galat jika terjadi kegagalan pemuatan data.
   String? get errorMessage => _errorMessage;
@@ -152,6 +156,55 @@ class KosProvider extends ChangeNotifier {
       return null;
     } finally {
       _isCreating = false;
+      notifyListeners();
+    }
+  }
+
+  /// Memperbarui informasi data kos melalui [KosRepository].
+  ///
+  /// Mengembalikan objek [Kos] jika berhasil diperbarui, atau `null` jika terjadi kegagalan.
+  /// Memperbarui item kos pada daftar lokal [_kosList] agar perubahan langsung terlihat di UI.
+  Future<Kos?> updateKos({
+    required String id,
+    required String ownerId,
+    required String nama,
+    required String alamatArea,
+    required int hargaPerBulan,
+    required String deskripsi,
+    required String fasilitas,
+    required String tipeKos,
+    required String nomorKontak,
+  }) async {
+    _isUpdating = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updatedKos = await _repository.updateKos(
+        id: id,
+        ownerId: ownerId,
+        nama: nama,
+        alamatArea: alamatArea,
+        hargaPerBulan: hargaPerBulan,
+        deskripsi: deskripsi,
+        fasilitas: fasilitas,
+        tipeKos: tipeKos,
+        nomorKontak: nomorKontak,
+      );
+
+      final index = _kosList.indexWhere((k) => k.id == id);
+      if (index != -1) {
+        _kosList[index] = updatedKos;
+      } else {
+        _kosList.add(updatedKos);
+      }
+      _errorMessage = null;
+      return updatedKos;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      return null;
+    } finally {
+      _isUpdating = false;
       notifyListeners();
     }
   }
